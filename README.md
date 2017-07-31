@@ -5,8 +5,8 @@ LEGOlize your images
 ## Usage
 
 ```shell
-$ python legolize.py --help
-usage: legolize.py [-h] -i INPUT_IMAGE [-o OUTPUT_IMAGE]
+$ legolize --help
+usage: legolize [-h] -i INPUT_IMAGE [-o OUTPUT_IMAGE]
 
 LEGOlize given image
 
