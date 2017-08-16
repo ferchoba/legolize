@@ -9,12 +9,12 @@ from PIL import Image, ImageStat, ImageDraw
 def create_brick_circle(brick_size):
     white = (255,255,255,0)
     grey = (50, 50, 50, 100)
-    cricle_brick_ratio = 0.4
+    circle_brick_ratio = 0.4
 
     brick_circle = Image.new('RGBA', (brick_size, brick_size), white)
 
     brick_circle_context = ImageDraw.Draw(brick_circle)
-    circle_size = int((cricle_brick_ratio * brick_size) / 2)
+    circle_size = int((circle_brick_ratio * brick_size) / 2)
     brick_circle_context.ellipse(
             (circle_size, circle_size, brick_size-circle_size, brick_size-circle_size),
             outline=grey)
@@ -22,11 +22,17 @@ def create_brick_circle(brick_size):
     return brick_circle
 
 
-def legolize(input_file_path, output_file_path, *colors):
+class MedianColorGenerator:
+    def __call__(self, cropped):
+        return ImageStat.Stat(cropped).median
+
+
+def legolize(input_file_path, output_file_path, new_color_generator):
     try:
         img = Image.open(input_file_path)
     except FileNotFoundError:
         print(f"File {input_file_path} doesn't exist")
+        return
 
     if output_file_path is None:
         output_file_path = os.path.join(
@@ -41,9 +47,8 @@ def legolize(input_file_path, output_file_path, *colors):
         for j in range(0, output_img.size[1], brick_size):
             cropped = output_img.crop((i, j, i + brick_size, j + brick_size))
             cropped = cropped.convert("RGBA")
-            cropped_stats = ImageStat.Stat(cropped)
-            cropped.paste(tuple(cropped_stats.median),
-                    (0, 0, cropped.size[0], cropped.size[1]))
+            new_color = new_color_generator(cropped)
+            cropped.paste(tuple(new_color), (0, 0, cropped.size[0], cropped.size[1]))
             cropped = Image.alpha_composite(cropped, brick_circle)
             output_img.paste(cropped, (i, j))
 
@@ -59,4 +64,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    legolize(args.input_image, args.output_image)
+    legolize(args.input_image, args.output_image, MedianColorGenerator())
