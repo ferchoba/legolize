@@ -27,18 +27,9 @@ class MedianColorGenerator:
         return ImageStat.Stat(cropped).median
 
 
-def legolize(input_file_path, output_file_path, new_color_generator):
-    try:
-        img = Image.open(input_file_path)
-    except FileNotFoundError:
-        print(f"File {input_file_path} doesn't exist")
-        return
 
-    if output_file_path is None:
-        output_file_path = os.path.join(
-                os.path.dirname(input_file_path),
-                f"legolized-{os.path.basename(input_file_path)}")
 
+def legolize(img, output_file_path, new_color_generator):
     brick_size = 14
     brick_circle = create_brick_circle(brick_size)
 
@@ -64,4 +55,17 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    legolize(args.input_image, args.output_image, MedianColorGenerator())
+    try:
+        img = Image.open(args.input_image)
+    except FileNotFoundError:
+        print(f"File {args.input_image} doesn't exist")
+        sys.exit(1)
+
+    output_file_path = args.output_image
+    if output_file_path is None:
+        output_file_path = os.path.join(
+                os.path.dirname(args.input_image),
+                f"legolized-{os.path.basename(args.input_image)}")
+
+    median_based = MedianColorGenerator()
+    legolize(img, output_file_path, median_based)
