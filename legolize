@@ -48,6 +48,17 @@ class SetBasedColorGenerator:
         return self.colors[distances.index(min(distances))]
 
 
+class QuantizationColorGenerator:
+    def __init__(self, image, colors_count=50):
+        self.colors = [c for _, c in image.convert(
+            'P', palette=Image.ADAPTIVE, colors=colors_count).convert(
+                'RGB').getcolors()]
+
+    def __call__(self, cropped):
+        return SetBasedColorGenerator(self.colors)(cropped)
+
+
+
 def legolize(img, output_file_path, new_color_generator):
     brick_size = 14
     brick_circle = create_brick_circle(brick_size)
