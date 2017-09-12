@@ -50,6 +50,9 @@ class SetBasedColorGenerator:
 
 class QuantizationColorGenerator:
     def __init__(self, image, colors_count=50):
+        if not colors_count > 1:
+            raise ValueError("Colors count for quantization should be greater "
+                             "than 1")
         self.colors = [c for _, c in image.convert(
             'P', palette=Image.ADAPTIVE, colors=colors_count).convert(
             'RGB').getcolors()]
@@ -82,6 +85,9 @@ if __name__ == '__main__':
                         help='image to legolize', required=True)
     parser.add_argument('-o', '--output-image', type=str, default=None,
                         help='output path')
+    parser.add_argument('-m', '--method', choices=['median', 'quant'],
+                        default='median')
+    parser.add_argument('-c', '--count', type=int, default=8)
 
     args = parser.parse_args()
 
@@ -94,8 +100,12 @@ if __name__ == '__main__':
     output_file_path = args.output_image
     if output_file_path is None:
         output_file_path = os.path.join(
-                os.path.dirname(args.input_image),
-                f"legolized-{os.path.basename(args.input_image)}")
+            os.path.dirname(args.input_image),
+            f"legolized-{os.path.basename(args.input_image)}")
 
-    median_based = MedianColorGenerator()
-    legolize(img, output_file_path, median_based)
+    method = None
+    if args.method == 'median':
+        method = MedianColorGenerator()
+    elif args.method == 'quant':
+        method = QuantizationColorGenerator(img, colors_count=args.count)
+    legolize(img, output_file_path, method)
