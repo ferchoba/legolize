@@ -3,12 +3,12 @@
 import argparse
 import math
 import os.path
-
+import sys
 from PIL import Image, ImageStat, ImageDraw
 
 
 def create_brick_circle(brick_size):
-    white = (255,255,255,0)
+    white = (255, 255, 255, 0)
     grey = (50, 50, 50, 100)
     circle_brick_ratio = 0.4
 
@@ -17,8 +17,9 @@ def create_brick_circle(brick_size):
     brick_circle_context = ImageDraw.Draw(brick_circle)
     circle_size = int((circle_brick_ratio * brick_size) / 2)
     brick_circle_context.ellipse(
-            (circle_size, circle_size, brick_size-circle_size, brick_size-circle_size),
-            outline=grey)
+        (circle_size, circle_size,
+         brick_size - circle_size, brick_size - circle_size),
+        outline=grey)
 
     return brick_circle
 
@@ -29,7 +30,6 @@ class MedianColorGenerator:
 
 
 class EuclideanColorMetric:
-
     def __call__(self, c1, c2):
         return math.sqrt(sum([(a - b) ** 2 for a, b in list(zip(c1, c2))[:3]]))
 
@@ -52,11 +52,10 @@ class QuantizationColorGenerator:
     def __init__(self, image, colors_count=50):
         self.colors = [c for _, c in image.convert(
             'P', palette=Image.ADAPTIVE, colors=colors_count).convert(
-                'RGB').getcolors()]
+            'RGB').getcolors()]
 
     def __call__(self, cropped):
         return SetBasedColorGenerator(self.colors)(cropped)
-
 
 
 def legolize(img, output_file_path, new_color_generator):
@@ -69,7 +68,8 @@ def legolize(img, output_file_path, new_color_generator):
             cropped = output_img.crop((i, j, i + brick_size, j + brick_size))
             cropped = cropped.convert("RGBA")
             new_color = new_color_generator(cropped)
-            cropped.paste(tuple(new_color), (0, 0, cropped.size[0], cropped.size[1]))
+            cropped.paste(tuple(new_color),
+                          (0, 0, cropped.size[0], cropped.size[1]))
             cropped = Image.alpha_composite(cropped, brick_circle)
             output_img.paste(cropped, (i, j))
 
