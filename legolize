@@ -1,38 +1,67 @@
 #!/usr/bin/env python
 
 import argparse
+import math
 import os.path
-
+import sys
 from PIL import Image, ImageStat, ImageDraw
 
 
 def create_brick_circle(brick_size):
-    white = (255,255,255,0)
+    white = (255, 255, 255, 0)
     grey = (50, 50, 50, 100)
-    cricle_brick_ratio = 0.4
+    circle_brick_ratio = 0.4
 
     brick_circle = Image.new('RGBA', (brick_size, brick_size), white)
 
     brick_circle_context = ImageDraw.Draw(brick_circle)
-    circle_size = int((cricle_brick_ratio * brick_size) / 2)
+    circle_size = int((circle_brick_ratio * brick_size) / 2)
     brick_circle_context.ellipse(
-            (circle_size, circle_size, brick_size-circle_size, brick_size-circle_size),
-            outline=grey)
+        (circle_size, circle_size,
+         brick_size - circle_size, brick_size - circle_size),
+        outline=grey)
 
     return brick_circle
 
 
-def legolize(input_file_path, output_file_path, *colors):
-    try:
-        img = Image.open(input_file_path)
-    except FileNotFoundError:
-        print(f"File {input_file_path} doesn't exist")
+class MedianColorGenerator:
+    def __call__(self, cropped):
+        return ImageStat.Stat(cropped).median
 
-    if output_file_path is None:
-        output_file_path = os.path.join(
-                os.path.dirname(input_file_path),
-                f"legolized-{os.path.basename(input_file_path)}")
 
+class EuclideanColorMetric:
+    def __call__(self, c1, c2):
+        return math.sqrt(sum([(a - b) ** 2 for a, b in list(zip(c1, c2))[:3]]))
+
+
+class SetBasedColorGenerator:
+    def __init__(self, colors, colors_metric=EuclideanColorMetric()):
+        self.colors = colors
+        self.metric = colors_metric
+
+    def __call__(self, cropped):
+        median_color = MedianColorGenerator()(cropped)
+        return self.find_closest_to(median_color)
+
+    def find_closest_to(self, color):
+        distances = [self.metric(c, color) for c in self.colors]
+        return self.colors[distances.index(min(distances))]
+
+
+class QuantizationColorGenerator:
+    def __init__(self, image, colors_count=50):
+        if not colors_count > 1:
+            raise ValueError("Colors count for quantization should be greater "
+                             "than 1")
+        self.colors = [c for _, c in image.convert(
+            'P', palette=Image.ADAPTIVE, colors=colors_count).convert(
+            'RGB').getcolors()]
+
+    def __call__(self, cropped):
+        return SetBasedColorGenerator(self.colors)(cropped)
+
+
+def legolize(img, output_file_path, new_color_generator):
     brick_size = 14
     brick_circle = create_brick_circle(brick_size)
 
@@ -41,9 +70,9 @@ def legolize(input_file_path, output_file_path, *colors):
         for j in range(0, output_img.size[1], brick_size):
             cropped = output_img.crop((i, j, i + brick_size, j + brick_size))
             cropped = cropped.convert("RGBA")
-            cropped_stats = ImageStat.Stat(cropped)
-            cropped.paste(tuple(cropped_stats.median),
-                    (0, 0, cropped.size[0], cropped.size[1]))
+            new_color = new_color_generator(cropped)
+            cropped.paste(tuple(new_color),
+                          (0, 0, cropped.size[0], cropped.size[1]))
             cropped = Image.alpha_composite(cropped, brick_circle)
             output_img.paste(cropped, (i, j))
 
@@ -56,7 +85,27 @@ if __name__ == '__main__':
                         help='image to legolize', required=True)
     parser.add_argument('-o', '--output-image', type=str, default=None,
                         help='output path')
+    parser.add_argument('-m', '--method', choices=['median', 'quant'],
+                        default='median')
+    parser.add_argument('-c', '--count', type=int, default=8)
 
     args = parser.parse_args()
 
-    legolize(args.input_image, args.output_image)
+    try:
+        img = Image.open(args.input_image)
+    except FileNotFoundError:
+        print(f"File {args.input_image} doesn't exist")
+        sys.exit(1)
+
+    output_file_path = args.output_image
+    if output_file_path is None:
+        output_file_path = os.path.join(
+            os.path.dirname(args.input_image),
+            f"legolized-{os.path.basename(args.input_image)}")
+
+    method = None
+    if args.method == 'median':
+        method = MedianColorGenerator()
+    elif args.method == 'quant':
+        method = QuantizationColorGenerator(img, colors_count=args.count)
+    legolize(img, output_file_path, method)
