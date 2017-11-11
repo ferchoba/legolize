@@ -1,19 +1,7 @@
 # legolize
 
-LEGOlize your images
+LEGOlize your images - budget [Mosaic Maker](https://petapixel.com/2017/03/02/lego-photo-booth-helps-build-portrait-bricks/) with [Pillow](https://python-pillow.org/).
 
-## Usage
+## Example
 
-```shell
-$ legolize --help
-usage: legolize [-h] -i INPUT_IMAGE [-o OUTPUT_IMAGE]
-
-LEGOlize given image
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -i INPUT_IMAGE, --input-image INPUT_IMAGE
-                        image to legolize
-  -o OUTPUT_IMAGE, --output-image OUTPUT_IMAGE
-                        output path
-```
+![example](example.png)
