@@ -6,6 +6,25 @@ LEGOlize your images - budget [Mosaic Maker](https://petapixel.com/2017/03/02/le
 
 ![example](example.png)
 
+## Usage
+
+```shell
+$ legolize --h
+usage: legolize [-h] -i INPUT_IMAGE [-o OUTPUT_IMAGE] [-m {median,quant}]
+                [-c COUNT]
+
+LEGOlize given image
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i INPUT_IMAGE, --input-image INPUT_IMAGE
+                        image to legolize
+  -o OUTPUT_IMAGE, --output-image OUTPUT_IMAGE
+                        output path
+  -m {median,quant}, --method {median,quant}
+  -c COUNT, --count COUNT
+```
+
 ## License
 
 MIT License
